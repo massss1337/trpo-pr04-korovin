@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../src/functions.php';
 
 $appName = 'Заявки сотрудников';
-$appVersion = '0.2';
+$appVersion = '0.3';
 $practiceNumber = 4;
 
 $employees = [];
@@ -23,6 +23,27 @@ try {
 }
 
 $employeeCount = count($employees);
+
+$departments = array_values(
+    array_unique(array_column($employees, 'department'))
+);
+
+sort($departments);
+
+$input = [
+    'name' => normalizeText($_POST['name'] ?? ''),
+    'department' => normalizeText($_POST['department'] ?? ''),
+    'experience' => normalizeText($_POST['experience'] ?? ''),
+    'email' => normalizeText($_POST['email'] ?? ''),
+];
+
+$errors = [];
+$success = false;
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $errors = validateInput($input, $departments);
+    $success = $errors === [];
+}
 
 ?>
 <!DOCTYPE html>
@@ -76,6 +97,109 @@ $employeeCount = count($employees);
                         </tbody>
                     </table>
                 </div>
+            <?php endif; ?>
+        </section>
+            <section>
+            <h2>Заявка сотрудника</h2>
+
+            <?php if ($loadError !== '' || $departments === []): ?>
+                <p>Отправка заявки временно недоступна.</p>
+            <?php else: ?>
+
+                <?php if ($errors !== []): ?>
+                    <div class="error" role="alert">
+                        <p>Проверьте введённые данные:</p>
+                        <ul>
+                            <?php foreach ($errors as $error): ?>
+                                <li><?= escapeHtml($error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($success): ?>
+                    <div class="success" role="status">
+                        <h3>Заявка успешно обработана</h3>
+                        <p>
+                            Имя:
+                            <?= escapeHtml($input['name']) ?>
+                        </p>
+                        <p>
+                            Отдел:
+                            <?= escapeHtml($input['department']) ?>
+                        </p>
+                        <p>
+                            Стаж:
+                            <?= escapeHtml($input['experience']) ?> лет
+                        </p>
+                        <p>
+                            Email:
+                            <?= escapeHtml($input['email']) ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
+
+                <form method="post" action="/" class="request-form" novalidate>
+                    <div class="form-row">
+                        <label for="name">Имя</label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value="<?= escapeHtml($input['name']) ?>"
+                            minlength="2"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <label for="department">Отдел</label>
+                        <select id="department" name="department" required>
+                            <option value="">Выберите отдел</option>
+
+                            <?php foreach ($departments as $department): ?>
+                                <option
+                                    value="<?= escapeHtml($department) ?>"
+                                    <?= $input['department'] === $department
+                                        ? 'selected'
+                                        : '' ?>
+                                >
+                                    <?= escapeHtml($department) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="experience">Стаж, лет</label>
+                        <input
+                            type="number"
+                            id="experience"
+                            name="experience"
+                            value="<?= escapeHtml($input['experience']) ?>"
+                            min="0"
+                            max="60"
+                            step="1"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <label for="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value="<?= escapeHtml($input['email']) ?>"
+                            maxlength="254"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit">Отправить заявку</button>
+                </form>
+
             <?php endif; ?>
         </section>
     </main>

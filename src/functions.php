@@ -66,3 +66,47 @@ function loadEmployees(string $path): array
         fclose($file);
     }
 }
+
+function normalizeText($value): string
+{
+    return is_scalar($value) ? trim((string) $value) : '';
+}
+
+function validateInput(array $input, array $departments): array
+{
+    $errors = [];
+
+    if ($input['name'] === '') {
+        $errors['name'] = 'Введите имя.';
+    } elseif (
+        mb_strlen($input['name'], 'UTF-8') < 2 ||
+        mb_strlen($input['name'], 'UTF-8') > 100
+    ) {
+        $errors['name'] = 'Имя должно содержать от 2 до 100 символов.';
+    }
+
+    if (!in_array($input['department'], $departments, true)) {
+        $errors['department'] = 'Выберите отдел из списка.';
+    }
+
+    $experience = filter_var(
+        $input['experience'],
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 0, 'max_range' => 60]]
+    );
+
+    if ($experience === false) {
+        $errors['experience'] = 'Стаж должен быть целым числом от 0 до 60 лет.';
+    }
+
+    if ($input['email'] === '') {
+        $errors['email'] = 'Введите email.';
+    } elseif (
+        mb_strlen($input['email'], 'UTF-8') > 254 ||
+        filter_var($input['email'], FILTER_VALIDATE_EMAIL) === false
+    ) {
+        $errors['email'] = 'Введите корректный email.';
+    }
+
+    return $errors;
+}
