@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../src/functions.php';
 
 $appName = 'Заявки сотрудников';
-$appVersion = '0.3';
+$appVersion = '0.4';
 $practiceNumber = 4;
 
 $employees = [];
@@ -29,6 +29,12 @@ $departments = array_values(
 );
 
 sort($departments);
+
+$selectedDepartment = normalizeText($_GET['department'] ?? '');
+
+$filteredEmployees = filterEmployees($employees, $selectedDepartment);
+
+$filteredCount = count($filteredEmployees);
 
 $input = [
     'name' => normalizeText($_POST['name'] ?? ''),
@@ -66,12 +72,48 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         <section>
             <h2>Сотрудники</h2>
 
+                <form method="get" action="/" class="request-form">
+                <div class="form-row">
+                    <label for="department-filter">Фильтр по отделу</label>
+
+                    <select id="department-filter" name="department">
+                        <option value="">Все отделы</option>
+
+                        <?php if (
+                            $selectedDepartment !== '' &&
+                            !in_array($selectedDepartment, $departments, true)
+                        ): ?>
+                            <option
+                                value="<?= escapeHtml($selectedDepartment) ?>"
+                                selected
+                            >
+                                <?= escapeHtml($selectedDepartment) ?>
+                                — отдел не найден
+                            </option>
+                        <?php endif; ?>
+
+                        <?php foreach ($departments as $department): ?>
+                            <option
+                                value="<?= escapeHtml($department) ?>"
+                                <?= $selectedDepartment === $department
+                                    ? 'selected'
+                                    : '' ?>
+                            >
+                                <?= escapeHtml($department) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <button type="submit">Применить фильтр</button>
+                <a href="/">Сбросить</a>
+            </form>
             <?php if ($loadError !== ''): ?>
                 <p class="error"><?= escapeHtml($loadError) ?></p>
-            <?php elseif ($employees === []): ?>
-                <p>Список сотрудников пуст.</p>
+            <?php elseif ($filteredEmployees === []): ?>
+                <p><p>Сотрудники по заданным условиям не найдены.</p></p>
             <?php else: ?>
-                <p>Всего сотрудников: <?= $employeeCount ?></p>
+                <p>Показано сотрудников: <?= $filteredCount ?> из <?= $employeeCount ?></p>
 
                 <div class="table-wrapper">
                     <table>
@@ -85,7 +127,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($employees as $employee): ?>
+                            <?php foreach ($filteredEmployees as $employee): ?>
                                 <tr>
                                     <td><?= $employee['id'] ?></td>
                                     <td><?= escapeHtml($employee['name']) ?></td>

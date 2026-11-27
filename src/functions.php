@@ -110,3 +110,16 @@ function validateInput(array $input, array $departments): array
 
     return $errors;
 }
+
+function filterEmployees(array $employees, string $department): array
+{
+    $result = [];
+
+    foreach ($employees as $employee) {
+        if ($department === '' || $employee['department'] === $department) {
+            $result[] = $employee;
+        }
+    }
+
+    return $result;
+}
